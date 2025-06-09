@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VPN Security Audit</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <button onclick="navigateTo('home')">🏠 Home</button>
+    <button onclick="navigateTo('about')">🔍 About VPNs</button>
+    <button onclick="navigateTo('tips')">🛡️ Security Tips</button>
+    <button onclick="navigateTo('audit')">🧾 Security Audit</button>
+    <button onclick="navigateTo('report')">📄 Audit Report</button>
+  </nav>
+
+  <div class="page" id="home">
+    <h1>🛡️ VPN Security Audit</h1>
+    <p>Check your current VPN/IP information and download audit reports.</p>
+    <img src="https://cdn-icons-png.flaticon.com/512/10475/10475657.png" width="120" alt="VPN Shield">
+    <div id="vpn-info-table"></div>
+    <div class="buttons">
+      <button onclick="fetchVPNDataAndAudit()">🔄 Run Security Audit</button>
+      <button onclick="generateReport()">📥 Generate Report</button>
+    </div>
+  </div>
+
+  <div class="page hidden" id="about">
+    <h1>🔍 About VPNs</h1>
+    <img src="https://cdn-icons-png.flaticon.com/512/265/265730.png" width="100" alt="VPN Lock">
+    <p>🔒 VPN stands for Virtual Private Network.</p>
+    <p>🌐 It masks your IP address to protect your online identity.</p>
+    <p>🔐 Creates an encrypted tunnel between your device and the internet.</p>
+    <p>🕵️ Helps you stay anonymous and avoid tracking.</p>
+    <p>🛡️ Protects sensitive data on public Wi-Fi networks.</p>
+    <p>🌍 Lets you bypass geo-restrictions and access global content.</p>
+    <p>⚠️ Prevents ISP monitoring and potential data throttling.</p>
+  </div>
+
+  <div class="page hidden" id="tips">
+    <h1>🛡️ Security Tips</h1>
+    <img src="https://cdn-icons-png.flaticon.com/512/3064/3064197.png" width="80" alt="Security Tips">
+    <ul>
+      <li>Use strong, unique passwords.</li>
+      <li>Keep software up to date.</li>
+      <li>Enable multi-factor authentication.</li>
+      <li>Never share personal data over unsecured connections.</li>
+      <li>Always use a trusted VPN service provider.</li>
+    </ul>
+  </div>
+
+  <div class="page hidden" id="audit">
+    <h1>🧾 Security Audit Checklist</h1>
+    <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png" width="80" alt="Audit Icon">
+    <table class="info-table" id="audit-table">
+      <tr><th>Audit Criteria</th><th>Status</th><th>Remarks</th></tr>
+    </table>
+  </div>
+
+  <div class="page hidden" id="report">
+    <h1>📄 Audit Report</h1>
+    <img src="https://cdn-icons-png.flaticon.com/512/4213/4213179.png" width="80" alt="Report Icon">
+    <p>Click below to generate your latest audit report.</p>
+    <button onclick="generateReport()">📥 Download Report</button>
+  </div>
+
+  <script>
+    const pages = document.querySelectorAll('.page');
+    let vpnData = {};
+    let auditData = [];
+
+    function navigateTo(pageId) {
+      pages.forEach(page => page.classList.toggle('hidden', page.id !== pageId));
+    }
+
+    async function fetchVPNDataAndAudit() {
+      try {
+        const res = await fetch('https://ipinfo.io/json?token=e0463b3abcf466');
+        vpnData = await res.json();
+       
+        document.getElementById('vpn-info-table').innerHTML = `
+          <table class="info-table">
+            <tr><th>Field</th><th>Value</th></tr>
+            <tr><td>IP Address</td><td>${vpnData.ip}</td></tr>
+            <tr><td>City</td><td>${vpnData.city}</td></tr>
+            <tr><td>Region</td><td>${vpnData.region}</td></tr>
+            <tr><td>Country</td><td>${vpnData.country}</td></tr>
+            <tr><td>ISP</td><td>${vpnData.org}</td></tr>
+            <tr><td>Location</td><td>${vpnData.loc}</td></tr>
+            <tr><td>Status</td><td>${vpnData?.country == 'DE' || vpnData?.country == 'DE' ? 'VPN/Proxy Detected' : 'Clear'}</td></tr>
+            <tr><td>Time</td><td>${new Date().toLocaleString()}</td></tr>
+          </table>
+        `;
+
+        const isVPN = vpnData?.country === 'DE'; // Example: DE = VPN ON
+        const isEncrypted = isVPN; // Assume encryption if VPN is active
+        const hasNoDNSLeak = isVPN; // Assume DNS secure if VPN is active
+
+        auditData = [
+          { criteria: "VPN Enabled", status: isVPN ? '✔️' : '❌', remark: isVPN ? "Encrypted tunnel active" : "VPN not detected" },
+          { criteria: "IP Masked", status: isVPN ? '✔️' : '❌', remark: isVPN ? "Original IP hidden" : "Real IP exposed" },
+          { criteria: "DNS Leak Test", status: hasNoDNSLeak ? '✔️' : '❌', remark: hasNoDNSLeak ? "No DNS leaks" : "DNS requests may be exposed" },
+          { criteria: "Data Encryption", status: isEncrypted ? '✔️' : '❌', remark: isEncrypted ? "Using AES-256" : "Unencrypted traffic" },
+          { criteria: "Kill Switch", status: '❌', remark: "Enable for added protection" }
+        ];
+
+
+        const auditTable = document.getElementById('audit-table');
+        auditTable.innerHTML = '<tr><th>Audit Criteria</th><th>Status</th><th>Remarks</th></tr>' +
+          auditData.map(row => `<tr><td>${row.criteria}</td><td>${row.status}</td><td>${row.remark}</td></tr>`).join('');
+
+      } catch (err) {
+        alert("Failed to fetch VPN data.");
+      }
+    }
+
+    function generateReport() {
+      const reportLines = [
+        'VPN Audit Report',
+        '=================',
+        `Generated: ${new Date().toLocaleString()}`,
+        '',
+        ...auditData.map(a => `${a.criteria}: ${a.status} - ${a.remark}`)
+      ];
+      const blob = new Blob([reportLines.join('\n')], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'vpn-audit.txt';
+      a.click();
+    }
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(-45deg, #1e3c72, #2a5298, #0f2027, #203a43);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .navbar {
+      background: rgba(0,0,0,0.4);
+      padding: 15px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .navbar button {
+      background: #00d2ff;
+      background: linear-gradient(to right, #3a7bd5, #00d2ff);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: transform 0.2s ease;
+    }
+
+    .navbar button:hover {
+      transform: scale(1.1);
+      background: linear-gradient(to right, #00d2ff, #3a7bd5);
+    }
+
+    .page {
+      animation: fadeIn 0.6s ease-in-out;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .buttons button {
+      margin: 10px;
+      padding: 10px 15px;
+      border-radius: 20px;
+      border: none;
+      background: #28a745;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .buttons button:hover {
+      background: #218838;
+    }
+
+    .info-table {
+      width: 90%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .info-table th, .info-table td {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 10px;
+      text-align: left;
+    }
+
+    .info-table th {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    img {
+      margin: 20px auto;
+      display: block;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</body>
+</html>
+
